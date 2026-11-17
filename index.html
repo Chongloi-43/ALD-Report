@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f2f57">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ALD Report">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>ALD Strength Report</title>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px system-ui,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<style>
+/* Layout: one narrow column built for a phone held in one hand. Sticky tally strip on top, roster in the middle, finished report at the bottom. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --ink: #0f2238;
+  --muted: #5a6b80;
+  --line: #d3dae3;
+  --accent: #0f2f57;
+  --accent-ink: #ffffff;
+  --saffron: #d9780f;
+  --s-p: #1f7a4d;   --s-p-bg: #dff3e8;
+  --s-od: #1b5fa8;  --s-od-bg: #dde9f8;
+  --s-td: #a86a00;  --s-td-bg: #fbecd0;
+  --s-l: #6a3fa0;   --s-l-bg: #ebe2f7;
+  --s-m: #b3261e;   --s-m-bg: #fadedb;
+  --s-wd: #0b7285;  --s-wd-bg: #d8f0f4;
+  --s-sd: #a1346b;  --s-sd-bg: #f8e0ec;
+  --warn-bg: #fff3d6;
+  --font-head: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1522; --surface: #132133; --ink: #e8eef6; --muted: #93a4b9; --line: #263a52;
+    --accent: #4c8ad6; --accent-ink: #07131f; --saffron: #f0a04b;
+    --s-p: #5fd39a; --s-p-bg: #12382a;
+    --s-od: #7db4f0; --s-od-bg: #15304f;
+    --s-td: #f0b44f; --s-td-bg: #3f2e0c;
+    --s-l: #c0a0ee; --s-l-bg: #2e2149;
+    --s-m: #ff8f86; --s-m-bg: #4a1c18;
+  --s-wd: #5fd0e0; --s-wd-bg: #0f3a42;
+  --s-sd: #f08fc0; --s-sd-bg: #46182f;
+    --warn-bg: #3f3210;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1522; --surface: #132133; --ink: #e8eef6; --muted: #93a4b9; --line: #263a52;
+  --accent: #4c8ad6; --accent-ink: #07131f; --saffron: #f0a04b;
+  --s-p: #5fd39a; --s-p-bg: #12382a;
+  --s-od: #7db4f0; --s-od-bg: #15304f;
+  --s-td: #f0b44f; --s-td-bg: #3f2e0c;
+  --s-l: #c0a0ee; --s-l-bg: #2e2149;
+  --s-m: #ff8f86; --s-m-bg: #4a1c18;
+  --s-wd: #5fd0e0; --s-wd-bg: #0f3a42;
+  --s-sd: #f08fc0; --s-sd-bg: #46182f;
+  --warn-bg: #3f3210;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--accent); }
+.wrap { max-width: 720px; margin: 0 auto; min-width: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+
+/* header */
+.head { background: var(--accent); color: var(--accent-ink); margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); }
+.head .in { max-width: 720px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; justify-content: space-between; }
+.eyebrow { font-family: var(--font-head); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .8; }
+h1 { font-family: var(--font-head); font-size: 26px; line-height: 1.1; margin: 2px 0 0; font-weight: 700; text-wrap: balance; }
+.datebox { display: flex; flex-direction: column; gap: 2px; }
+.datebox label { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.datebox input { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35); color: inherit; border-radius: 6px; padding: 6px 8px; font-family: var(--font-mono); font-size: 14px; color-scheme: dark; }
+
+/* sticky tally */
+.tally { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 4px 3px; text-align: center; min-width: 0; }
+.tile b { display: block; font-family: var(--font-mono); font-size: 22px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile span { display: block; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.borne { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.tile.borne span { color: inherit; opacity: .8; }
+.tile[data-s="P"] b { color: var(--s-p); } .tile[data-s="OD"] b { color: var(--s-od); }
+.tile[data-s="TD"] b { color: var(--s-td); } .tile[data-s="L"] b { color: var(--s-l); } .tile[data-s="M"] b { color: var(--s-m); }
+.tile[data-s="OW"] b { color: var(--s-wd); } .tile[data-s="SD"] b { color: var(--s-sd); }
+.check { margin-top: 7px; font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 2px 10px; font-weight: 600; font-size: 12.5px; }
+.pill.ok { background: var(--s-p-bg); color: var(--s-p); }
+.pill.bad { background: var(--warn-bg); color: var(--s-td); }
+
+/* controls */
+.bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 10px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 12px; font-weight: 500; font-size: 14px; min-height: 40px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--s-m); }
+.search { width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 12px; min-height: 42px; }
+.filters { display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 4px; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 12px; font-size: 13px; min-height: 32px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.legend { font-size: 12.5px; color: var(--muted); margin: 4px 0 0; }
+
+/* roster */
+.roster { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; min-width: 0; }
+.row .top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.row .nm { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.row .sn { font-family: var(--font-mono); font-size: 12px; color: var(--muted); flex: none; }
+.seg { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.seg button { border: 1px solid var(--line); background: var(--bg); border-radius: 7px; min-height: 40px; font-family: var(--font-head); font-weight: 600; font-size: 12px; padding: 0; }
+.seg button[aria-pressed="true"][data-s="P"] { background: var(--s-p); border-color: var(--s-p); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="OD"] { background: var(--s-od); border-color: var(--s-od); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="OW"] { background: var(--s-wd); border-color: var(--s-wd); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="SD"] { background: var(--s-sd); border-color: var(--s-sd); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="TD"] { background: var(--s-td); border-color: var(--s-td); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="L"] { background: var(--s-l); border-color: var(--s-l); color: var(--surface); }
+.seg button[aria-pressed="true"][data-s="M"] { background: var(--s-m); border-color: var(--s-m); color: var(--surface); }
+:root[data-theme="dark"] .seg button[aria-pressed="true"] { color: #07131f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #07131f; } }
+.row input.why { width: 100%; border: 1px dashed var(--line); background: var(--bg); border-radius: 7px; padding: 7px 10px; font-size: 14px; }
+.empty { color: var(--muted); padding: 16px 4px; text-align: center; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 12px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.modes button { border: 0; background: transparent; padding: 10px 8px; min-height: 44px; font-weight: 600; font-size: 14px; }
+.modes button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.row .sn.exc { color: var(--ink); font-weight: 600; }
+.vrow { list-style: none; }
+.vbtn { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 52px; }
+.vbtn .box { flex: none; width: 28px; height: 28px; border-radius: 7px; border: 2px solid var(--line); display: grid; place-items: center; font-weight: 700; font-size: 17px; color: var(--accent-ink); }
+.vbtn .nm { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.vbtn .sn { font-family: var(--font-mono); font-size: 12px; color: var(--muted); flex: none; }
+.vbtn[aria-pressed="true"] { background: var(--s-p-bg); border-color: var(--s-p); }
+.vbtn[aria-pressed="true"] .box { background: var(--s-p); border-color: var(--s-p); }
+:root[data-theme="dark"] .vbtn .box { color: #07131f; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .vbtn .box { color: #07131f; } }
+
+/* report */
+h2 { font-family: var(--font-head); font-size: 19px; margin: 30px 0 8px; font-weight: 600; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.field input, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 10px; width: 100%; }
+textarea { resize: vertical; }
+.report { font-family: var(--font-mono); font-size: 13px; line-height: 1.55; min-height: 280px; background: var(--bg); }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.toggle input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+.note { font-size: 13px; color: var(--muted); margin: 0; }
+.toast { min-height: 20px; font-size: 13px; font-weight: 600; color: var(--s-p); }
+
+details { margin-top: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+summary { font-weight: 600; cursor: pointer; min-height: 28px; }
+.mgr { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 6px; }
+.mgr li { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding: 4px 0; }
+.mgr li span { min-width: 0; overflow-wrap: anywhere; }
+.addrow { display: flex; gap: 8px; }
+.addrow input { flex: 1; min-width: 0; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 10px; }
+.hist { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.hist th, .hist td { text-align: center; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.hist th:first-child, .hist td:first-child { text-align: left; }
+.scroll { overflow-x: auto; }
+@media (max-width: 380px) { .tile b { font-size: 19px; } .tile span { font-size: 9.5px; } }
+@media (prefers-reduced-motion: no-preference) { .btn, .seg button, .chip { transition: background .12s, border-color .12s; } }
+</style>
+</head>
+<body>
+
+<div class="head"><div class="in">
+  <div>
+    <div class="eyebrow">ICGAS Daman</div>
+    <h1>ALD Strength Report</h1>
+  </div>
+  <div class="datebox">
+    <label for="date">Report date</label>
+    <input type="date" id="date">
+  </div>
+</div></div>
+
+<div class="wrap">
+  <div class="tally" aria-live="polite">
+    <div class="tiles" id="tiles"></div>
+    <div class="check" id="check"></div>
+  </div>
+
+  <div class="modes" role="group" aria-label="Step">
+    <button type="button" id="modeMark" data-mode="mark" aria-pressed="true">1. Mark absentees</button>
+    <button type="button" id="modeVerify" data-mode="verify" aria-pressed="false">2. Verify present</button>
+  </div>
+  <p class="hint" id="hint"></p>
+
+  <div class="bar">
+    <button class="btn" id="carry" type="button">Carry over from last day</button>
+    <button class="btn danger" id="reset" type="button">Clear day</button>
+  </div>
+  <p class="legend" id="legend"><b>OD</b> On Duty · <b>OFF/W</b> Off Watch · <b>SD</b> Station Duty · <b>Ty/D</b> Ty Duty · <b>L</b> Leave · <b>M</b> Medical</p>
+
+  <input class="search" id="q" type="search" placeholder="Search a name" aria-label="Search a name" style="margin-top:10px">
+  <div class="filters" id="filters" role="group" aria-label="Filter by status"></div>
+  <ul class="roster" id="roster"></ul>
+
+  <h2>Report for higher authority</h2>
+  <div class="card">
+    <div class="field">
+      <label for="remarks">Extra remarks</label>
+      <textarea id="remarks" rows="2" placeholder="Anything not covered by the names above"></textarea>
+    </div>
+    <div class="field">
+      <label for="signer">Signature (name and rank)</label>
+      <input id="signer" type="text" placeholder="Reporting person">
+    </div>
+    <p class="note">Present is worked out as Borne minus everyone marked On Duty, OFF/W, Station Duty, Ty/D, Leave or Medical.</p>
+    <div class="field">
+      <label for="report">Report text</label>
+      <textarea class="report" id="report" readonly></textarea>
+    </div>
+    <button class="btn primary" id="copy" type="button">Copy report</button>
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <p class="note">Paste the copied text into WhatsApp, email or the signal. It follows the ICGAS Daman form line by line.</p>
+  </div>
+
+  <details>
+    <summary>Previous days</summary>
+    <div class="scroll" id="hist"></div>
+  </details>
+
+  <details>
+    <summary>Manage section roster</summary>
+    <ul class="mgr" id="mgr"></ul>
+    <form class="addrow" id="addForm">
+      <input id="newName" type="text" placeholder="Add a member" aria-label="New member name">
+      <button class="btn primary" type="submit">Add</button>
+    </form>
+    <p class="note" style="margin-top:8px">Borne strength follows the roster count. Removing a member removes them from today's and later reports only.</p>
+  </details>
+</div>
+
+<script>
+(function () {
+  var SEED = ["N Satheesh Kumar","SK Das","Rajesh Kumar","Gurpreet Singh","D Martoliya","KS Maurya","Kuldeep Saini","Jinu V","T Chongloi","Manish Kumar","Ajit Pandit","J Siva","D Kameswara Reddy","Harmanjeet Singh","Lakshmana rao Lenka","MK Yadav","Vishnu Kumar","Neeresh Kumar","DKS Parmar","Manoj Kumar","Jile Singh","Madan Lal","Vikash K Sharma","SK Behera","Pankaj","Satish Kumar","Akshay Kumar","Rohit Pal","Laxmi Kant Singh","Sahil"];
+  // Everyone is Present unless marked with one of these.
+  var ST = [
+    { k: "OD", label: "On Duty",      short: "OD",    tile: "On duty",      rep: "On Duty",      ph: "Duty (optional)" },
+    { k: "OW", label: "OFF/W",        short: "OFF/W", tile: "OFF/W",        rep: "OFF/W",        ph: "Watch (optional)" },
+    { k: "SD", label: "Station Duty", short: "SD",    tile: "Stn duty", rep: "Station Duty", ph: "Post (optional)" },
+    { k: "TD", label: "Ty/D",         short: "Ty/D",  tile: "Ty/D",         rep: "Ty/D",         ph: "Where (optional)" },
+    { k: "L",  label: "Leave",        short: "L",     tile: "Leave",        rep: "Leave",        ph: "" },
+    { k: "M",  label: "Medical",      short: "M",     tile: "Medical",      rep: "Medical",      ph: "Reason (optional)" }
+  ];
+  var ROSTER_KEY = "ald-roster-v1", DAY_PREFIX = "ald-day-", PREF_KEY = "ald-pref-v1";
+  var roster, day, dateKey, mode = "mark", filter = "ALL", vfilter = "A", query = "", prefs = { signer: "" };
+
+  function stOf(k) { for (var i = 0; i < ST.length; i++) if (ST[i].k === k) return ST[i]; return null; }
+  function needWhy(s) { return s === "TD" || s === "M" || s === "OW" || s === "SD" || s === "OD"; }
+  function sOf(id) { var m = day.marks[id]; return m && m.s && stOf(m.s) ? m.s : ""; }
+  function load(k) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function $(id) { return document.getElementById(id); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function todayKey() { var d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+  function fmtDate(k) {
+    var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
+    var M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], D = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    return pad(d.getDate()) + " " + M[d.getMonth()] + " " + d.getFullYear() + " (" + D[d.getDay()] + ")";
+  }
+
+  roster = load(ROSTER_KEY);
+  if (!roster || !roster.length) { roster = SEED.map(function (n, i) { return { id: "r" + (i + 1), name: n }; }); save(ROSTER_KEY, roster); }
+  var p = load(PREF_KEY); if (p) { prefs.signer = p.signer || ""; }
+
+  function normDay(d) {
+    d = d || {}; d.marks = d.marks || {}; d.seen = d.seen || {}; d.remarks = d.remarks || "";
+    Object.keys(d.marks).forEach(function (id) {
+      var m = d.marks[id]; if (!m) { delete d.marks[id]; return; }
+      if (m.s === "WD") m.s = "OW";
+      if (!stOf(m.s)) delete d.marks[id];   // old explicit "P" marks become the default
+    });
+    return d;
+  }
+
+  function openDay(k) {
+    dateKey = k;
+    day = normDay(load(DAY_PREFIX + k));
+    $("date").value = k;
+    $("remarks").value = day.remarks || "";
+    renderAll();
+  }
+  function saveDay() { save(DAY_PREFIX + dateKey, day); }
+  function savePrefs() { save(PREF_KEY, prefs); }
+
+  // Present = Borne minus everyone marked with an exception status.
+  function counts() {
+    var c = { P: 0, OD: 0, OW: 0, SD: 0, TD: 0, L: 0, M: 0, V: 0 };
+    roster.forEach(function (r) {
+      var s = sOf(r.id);
+      if (s) c[s]++; else { c.P++; if (day.seen[r.id]) c.V++; }
+    });
+    return c;
+  }
+  function presentOf(c) { return c.P; }
+
+  function renderTiles() {
+    var c = counts(), presentFig = presentOf(c);
+    var t = '<div class="tile borne"><b>' + roster.length + '</b><span>Borne</span></div>';
+    t += '<div class="tile" data-s="P"><b>' + presentFig + '</b><span>Present</span></div>';
+    ST.forEach(function (s) { t += '<div class="tile" data-s="' + s.k + '"><b>' + c[s.k] + '</b><span>' + s.tile + '</span></div>'; });
+    $("tiles").innerHTML = t;
+    var left = presentFig - c.V;
+    if (left === 0) {
+      $("check").innerHTML = '<span class="pill ok">All ' + presentFig + ' present verified</span>';
+    } else {
+      $("check").innerHTML = '<span class="pill bad">' + left + ' present to verify</span><span>' + c.V + ' of ' + presentFig + ' seen</span>';
+    }
+  }
+
+  function renderFilters() {
+    var c = counts(), items;
+    if (mode === "verify") {
+      items = [{ k: "A", l: "All present " + c.P }, { k: "N", l: "Not seen " + (c.P - c.V) }, { k: "Y", l: "Seen " + c.V }];
+    } else {
+      items = [{ k: "ALL", l: "All " + roster.length }, { k: "P", l: "Present " + c.P }];
+      ST.forEach(function (s) { items.push({ k: s.k, l: s.label + " " + c[s.k] }); });
+    }
+    var cur = mode === "verify" ? vfilter : filter;
+    $("filters").innerHTML = items.map(function (i) {
+      return '<button type="button" class="chip" data-f="' + i.k + '" aria-pressed="' + (cur === i.k) + '">' + esc(i.l) + '</button>';
+    }).join("");
+  }
+
+  function renderMode() {
+    $("modeMark").setAttribute("aria-pressed", mode === "mark");
+    $("modeVerify").setAttribute("aria-pressed", mode === "verify");
+    $("legend").hidden = mode === "verify";
+    $("carry").hidden = mode === "verify";
+    $("hint").textContent = mode === "verify"
+      ? "Everyone not marked absent is listed. Tick each person you see in the section."
+      : "Everyone counts as Present. Tap only those who are On Duty, OFF/W, Station Duty, Ty/D, on Leave or Medical.";
+  }
+
+  function renderRoster() {
+    var q = query.trim().toLowerCase(), html = "";
+    roster.forEach(function (r, idx) {
+      var s = sOf(r.id), m = day.marks[r.id] || {};
+      if (q && r.name.toLowerCase().indexOf(q) < 0) return;
+      if (mode === "verify") {
+        if (s) return;
+        var seen = !!day.seen[r.id];
+        if (vfilter === "N" && seen) return;
+        if (vfilter === "Y" && !seen) return;
+        html += '<li class="vrow"><button type="button" class="vbtn" data-seen="' + r.id + '" aria-pressed="' + seen + '"><span class="box">' + (seen ? "✓" : "") + '</span><span class="nm">' + esc(r.name) + '</span><span class="sn">' + pad(idx + 1) + '</span></button></li>';
+        return;
+      }
+      if (filter === "P" && s) return;
+      if (filter !== "ALL" && filter !== "P" && s !== filter) return;
+      var tag = s ? stOf(s).label : "Present";
+      html += '<li class="row" data-id="' + r.id + '"><div class="top"><span class="nm">' + esc(r.name) + '</span><span class="sn' + (s ? " exc" : "") + '">' + pad(idx + 1) + ' · ' + esc(tag) + '</span></div>';
+      html += '<div class="seg" role="group" aria-label="Status of ' + esc(r.name) + '">';
+      ST.forEach(function (x) { html += '<button type="button" data-s="' + x.k + '" aria-pressed="' + (s === x.k) + '" title="' + x.label + '">' + x.short + '</button>'; });
+      html += '</div>';
+      if (s && needWhy(s)) {
+        html += '<input class="why" type="text" data-why="' + r.id + '" placeholder="' + stOf(s).ph + '" aria-label="Note for ' + esc(r.name) + '" value="' + esc(m.r || "") + '">';
+      }
+      html += '</li>';
+    });
+    $("roster").innerHTML = html || '<li class="empty">' + (mode === "verify" ? "No one in this view." : "No one matches this view.") + '</li>';
+  }
+
+  function buildReport() {
+    var c = counts(), presentFig = presentOf(c);
+    var byName = function (s) {
+      return roster.filter(function (r) { return sOf(r.id) === s; }).map(function (r) {
+        var why = (day.marks[r.id].r || "").trim();
+        return r.name + (why ? " (" + why + ")" : "");
+      });
+    };
+    var rem = [];
+    ST.forEach(function (x) {
+      var n = byName(x.k); if (n.length) rem.push(x.rep + ": " + n.join("; "));
+    });
+    if ((day.remarks || "").trim()) rem.push(day.remarks.trim());
+    var L = [];
+    L.push("ICGAS DAMAN");
+    L.push("Unit/Dept: ALD");
+    L.push("Date: " + fmtDate(dateKey));
+    L.push("");
+    L.push("Borne: " + roster.length);
+    L.push("Present: " + presentFig);
+    L.push("Ty/D: " + c.TD);
+    L.push("Leave: " + c.L);
+    L.push("On Duty: " + c.OD);
+    L.push("OFF/W: " + c.OW);
+    L.push("Station Duty: " + c.SD);
+    L.push("Medical: " + c.M);
+    L.push("");
+    L.push("Remarks: " + (rem.length ? "" : "Nil"));
+    rem.forEach(function (r) { L.push("- " + r); });
+    L.push("");
+    L.push("Signature: " + (prefs.signer || "").trim());
+    return L.join("\n");
+  }
+
+  function renderReport() { $("report").value = buildReport(); }
+
+  function renderHistory() {
+    var keys = [];
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(DAY_PREFIX) === 0) keys.push(k.slice(DAY_PREFIX.length)); } } catch (e) {}
+    keys.sort().reverse();
+    if (!keys.length) { $("hist").innerHTML = '<p class="note" style="margin-top:8px">Days you mark on this device will be listed here.</p>'; return; }
+    var rows = keys.slice(0, 31).map(function (k) {
+      var d = normDay(load(DAY_PREFIX + k)), c = { OD: 0, OW: 0, SD: 0, TD: 0, L: 0, M: 0 }, ex = 0;
+      Object.keys(d.marks).forEach(function (id) { var s = d.marks[id].s; if (c[s] !== undefined) { c[s]++; ex++; } });
+      return '<tr><td><button type="button" class="chip" data-open="' + k + '">' + esc(k) + '</button></td><td>' + Math.max(0, roster.length - ex) + '</td><td>' + c.OD + '</td><td>' + c.OW + '</td><td>' + c.SD + '</td><td>' + c.TD + '</td><td>' + c.L + '</td><td>' + c.M + '</td></tr>';
+    }).join("");
+    $("hist").innerHTML = '<table class="hist"><thead><tr><th>Date</th><th>P</th><th>OD</th><th>OFF/W</th><th>SD</th><th>Ty/D</th><th>L</th><th>M</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+
+  function renderMgr() {
+    $("mgr").innerHTML = roster.map(function (r) {
+      return '<li><span>' + esc(r.name) + '</span><button type="button" class="btn danger" data-rm="' + r.id + '" aria-label="Remove ' + esc(r.name) + '">Remove</button></li>';
+    }).join("");
+  }
+
+  function renderSummary() { renderTiles(); renderFilters(); renderReport(); }
+  function renderAll() { $("signer").value = prefs.signer; renderMode(); renderSummary(); renderRoster(); renderHistory(); renderMgr(); }
+
+  /* events */
+  $("date").addEventListener("change", function (e) { if (e.target.value) openDay(e.target.value); });
+  $("q").addEventListener("input", function (e) { query = e.target.value; renderRoster(); });
+  document.querySelector(".modes").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-mode]"); if (!b) return;
+    mode = b.getAttribute("data-mode"); renderMode(); renderFilters(); renderRoster();
+  });
+  $("filters").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-f]"); if (!b) return;
+    if (mode === "verify") vfilter = b.getAttribute("data-f"); else filter = b.getAttribute("data-f");
+    renderFilters(); renderRoster();
+  });
+  $("roster").addEventListener("click", function (e) {
+    var v = e.target.closest("[data-seen]");
+    if (v) {
+      var sid = v.getAttribute("data-seen");
+      if (day.seen[sid]) delete day.seen[sid]; else day.seen[sid] = true;
+      saveDay(); renderSummary(); renderRoster(); return;
+    }
+    var b = e.target.closest(".seg button"); if (!b) return;
+    var id = b.closest(".row").getAttribute("data-id"), s = b.getAttribute("data-s");
+    var m = day.marks[id] || {};
+    if (m.s === s) { delete day.marks[id]; } else { day.marks[id] = { s: s, r: needWhy(s) ? (m.r || "") : "" }; delete day.seen[id]; }
+    saveDay(); renderSummary(); renderRoster(); renderHistory();
+  });
+  $("roster").addEventListener("input", function (e) {
+    var id = e.target.getAttribute("data-why"); if (!id) return;
+    if (day.marks[id]) { day.marks[id].r = e.target.value; saveDay(); renderReport(); }
+  });
+  $("carry").addEventListener("click", function () {
+    var keys = [];
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k && k.indexOf(DAY_PREFIX) === 0) { var kk = k.slice(DAY_PREFIX.length); if (kk < dateKey) keys.push(kk); } } } catch (e) {}
+    keys.sort();
+    var prev = keys.length ? normDay(load(DAY_PREFIX + keys[keys.length - 1])) : null, n = 0;
+    if (!prev) { toast("No earlier day saved on this device."); return; }
+    roster.forEach(function (r) {
+      var pm = prev.marks[r.id];
+      if (pm && (pm.s === "TD" || pm.s === "L" || pm.s === "M") && !day.marks[r.id]) { day.marks[r.id] = { s: pm.s, r: needWhy(pm.s) ? (pm.r || "") : "" }; n++; }
+    });
+    saveDay(); renderSummary(); renderRoster(); renderHistory();
+    toast(n ? n + " carried over from " + keys[keys.length - 1] + "." : "Nothing to carry over.");
+  });
+  var armed = false, armTimer;
+  $("reset").addEventListener("click", function () {
+    if (!armed) { armed = true; $("reset").textContent = "Tap again to clear"; clearTimeout(armTimer); armTimer = setTimeout(function () { armed = false; $("reset").textContent = "Clear day"; }, 3000); return; }
+    armed = false; $("reset").textContent = "Clear day";
+    day = normDay({}); $("remarks").value = ""; saveDay(); renderAll();
+  });
+  $("remarks").addEventListener("input", function (e) { day.remarks = e.target.value; saveDay(); renderReport(); });
+  $("signer").addEventListener("input", function (e) { prefs.signer = e.target.value; savePrefs(); renderReport(); });
+  function toast(t) { $("toast").textContent = t; clearTimeout(toast.t); toast.t = setTimeout(function () { $("toast").textContent = ""; }, 3500); }
+  $("copy").addEventListener("click", function () {
+    var txt = $("report").value;
+    var fallback = function () { $("report").focus(); $("report").select(); toast("Select and copy the text shown above."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function () { toast("Report copied."); }, fallback);
+    } else { fallback(); }
+  });
+  $("hist").addEventListener("click", function (e) { var b = e.target.closest("[data-open]"); if (b) { openDay(b.getAttribute("data-open")); window.scrollTo(0, 0); } });
+  $("addForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("newName").value.trim(); if (!v) return;
+    roster.push({ id: "n" + Date.now(), name: v }); save(ROSTER_KEY, roster); $("newName").value = ""; renderAll();
+  });
+  $("mgr").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-rm]"); if (!b) return;
+    var id = b.getAttribute("data-rm");
+    roster = roster.filter(function (r) { return r.id !== id; }); delete day.marks[id]; delete day.seen[id];
+    save(ROSTER_KEY, roster); saveDay(); renderAll();
+  });
+
+  openDay(todayKey());
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+</body>
+</html>
